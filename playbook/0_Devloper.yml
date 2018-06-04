@@ -1,0 +1,7 @@
+---
+- name: Playbook Ansible DevloperTool Install
+  hosts: laravel
+  gather_facts: no
+  roles:
+   - 0_Devloper
+

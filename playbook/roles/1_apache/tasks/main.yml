@@ -1,0 +1,18 @@
+---
+- name: apache Install Apache
+  yum: name=httpd
+
+- name: Documentroot Permisson change
+  file: path="{{ httpdir }}" owner="{{ httpuser }}" group="{{ httpuser }}" mode=0775
+
+- name: Documentroot Subdirectory Permission change
+  shell: find {{ httpdir }} -type d -exec chmod 0775 {} \;
+
+- name: Documentroot Subdirectory Permission change
+  shell: find {{ httpdir }} -type f -exec chmod 0664 {} \;
+
+- name: apache Enable htaccess
+  replace: dest="{{ httpdfile }}" regexp="{{ httpdbef }}" replace="{{ httpdaft }}"
+
+- name: apache restart
+  service: name=httpd state=restarted

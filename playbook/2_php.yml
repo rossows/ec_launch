@@ -1,0 +1,7 @@
+---
+- name: Playbook Ansible PHP Install and Setup
+  hosts: laravel
+  gather_facts: no
+  roles:
+   - 2_php
+

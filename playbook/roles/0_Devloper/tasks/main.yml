@@ -1,0 +1,10 @@
+---
+## DeveloperTool
+- name: Update Repo
+  yum: name=* state=latest
+  
+- name: Install DeveloperTool
+  yum: name="@Development tools"
+  
+- name: Install VIM
+  yum: name=vim

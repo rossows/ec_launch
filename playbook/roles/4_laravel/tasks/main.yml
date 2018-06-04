@@ -1,0 +1,49 @@
+---
+- name: laravel sorce code unarchive to tmp
+  unarchive: src="{{ tarfile }}" dest="{{ tardest }}" owner="{{ httpuser }}" group="{{ httpuser }}"
+
+- name: chmod {{ pjdir }}
+  shell: chmod -R 777 {{ pjdir }}
+
+- name: laravel composer Install
+  shell: curl -s "{{ laradl }}" | php
+
+- name: mv composer.phar {{ composer }}
+  shell: mv composer.phar "{{ composer }}"
+
+- name: laravel httpd_conf
+  replace: dest="{{ httpdfile }}" regexp="{{ item.regexp }}" replace="{{ item.replace }}" backup=yes
+  with_items:
+   - "{{ httpcode }}"
+
+- name: laravel copy .env
+  copy: src="{{ exlaravelenv }}" dest="{{ laravelenv }}" remote_src=yes backup=yes
+
+- name: laravel env
+  replace: dest="{{ laravelenv }}" regexp="{{ item.regexp }}" replace="{{ item.replace }}"
+  with_items:
+   - "{{ laravelcode }}"
+
+- name: composer install
+  shell: composer install
+  args:
+   chdir: "{{ pjdir }}/"
+
+- name: php artisan key:generate
+  shell: php artisan key:generate
+  args:
+   chdir: "{{ pjdir }}/"
+
+- name: php artisan cache:clear
+  shell: php artisan cache:clear
+  args:
+   chdir: "{{ pjdir }}/"
+
+- name: php artisan migrate
+  shell: php artisan migrate
+  args:
+   chdir: "{{ pjdir }}/"
+
+- name: apache restart
+  service: name=httpd state=restarted
+

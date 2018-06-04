@@ -1,0 +1,80 @@
+---
+ansible_port: 22
+ansible_user: root
+ansible_ssh_pass: ********
+
+### Apache ###
+httpdgroup: apache
+httpdir: /var/www
+httpuser: apache
+httpdfile: /etc/httpd/conf/httpd.conf
+httpdbef: 'AllowOverride None'
+httpdaft: 'AllowOverride All'
+
+### PHP ###
+phprepo: http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
+libpkg:
+ - 'libmcrypt'
+ - 'libtool-ltdl'
+ - 'libtidy'
+ - 'libXpm'
+ - 'libtiff'
+ - 'gd-last'
+ - 'autoconf'
+ - 'automake'
+
+pkglist:
+ - 'php'
+ - 'php-mbstring'
+ - 'php-mcrypt'
+ - 'php-mysqlnd'
+ - 'php-soap'
+ - 'php-pdo'
+ - 'php-devel'
+ - 'php-xml'
+
+repfile: /etc/php.ini
+phpbef: "^;date\\.timezone ="
+phpaft: "date.timezone = Asia/Tokyo"
+
+### mysql ###
+sqlrepo: http://dev.mysql.com/get/mysql-community-release-el6-5.noarch.rpm
+apkg:
+ - 'mysql'
+ - 'mysql-devel'
+ - 'mysql-server'
+ - 'mysql-utilities'
+
+buildpkg:
+ - 'cd /usr/tmp && wget http://download.sourceforge.net/sourceforge/mysql-python/MySQL-python-1.2.3.tar.gz'
+ - 'cd /usr/tmp && tar xvzf /usr/tmp/MySQL-python-1.2.3.tar.gz'
+ - 'cd /usr/tmp/MySQL-python-1.2.3 && python setup.py build'
+ - 'cd /usr/tmp/MySQL-python-1.2.3 && python setup.py install'
+ - 'rm -rf /usr/tmp/MySQL-python*'
+
+svc: mysqld
+svcstate: started
+svcauto: yes
+root_db_user: root
+root_db_password: ********
+dbname: rosso_ws
+tmp_mycnf: my.cnf.j2
+login_mycnf: /root/.my.cnf
+
+### laravel ###
+laradl: https://getcomposer.org/installer
+composer: /usr/local/bin/composer
+pjdir: /var/www/rosso_ws
+httpcode:
+ - { regexp: 'DocumentRoot "/var/www/html"' ,replace: 'DocumentRoot "{{ pjdir }}/public"' }
+ - { regexp: '<Directory "/var/www/html">' ,replace: '<Directory "{{ pjdir }}/public">' }
+laravelenv: "{{ pjdir }}/.env"
+exlaravelenv: "{{ pjdir }}/.env.example"
+laravelcode:
+ - { regexp: 'DB_PASSWORD=' ,replace: 'DB_PASSWORD=root' }
+ - { regexp: 'DB_HOST=rosso_ws_db' ,replace: 'DB_HOST=localhost' }
+
+### file ###
+tarfile: rosso_ws.tar.gz
+tardest: /var/www/
+

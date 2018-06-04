@@ -1,0 +1,7 @@
+---
+- name: Playbook Ansible MySQL Install and Setup
+  hosts: laravel
+  gather_facts: no
+  roles:
+   - 3_mysql
+

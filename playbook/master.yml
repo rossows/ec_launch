@@ -1,0 +1,13 @@
+---
+- name: Playbook All Provisioning
+  hosts: laravel
+  gather_facts: no
+  roles:
+##step 0 DevloperTool
+   - 0_Devloper
+##step 1 apache,php,mysql
+   - 1_apache
+   - 2_php
+   - 3_mysql
+##step 2 laravel
+   - 4_laravel

@@ -1,0 +1,29 @@
+---
+- name: mysql install repo
+  yum: name="{{ sqlrepo }}"
+
+- name: mysql install for repo mysql
+  yum: name="{{ item }}" state=present
+  with_items:
+   - "{{ apkg }}"
+
+- name: install mysql python module (from source)
+  command: 'bash -lc "{{ item }}"'
+  with_items:
+   - "{{ buildpkg }}"
+
+- name: apache restart
+  service: name=httpd state=restarted
+
+- name: mysql start mysql
+  service: name="{{ svc }}" state="{{ svcstate }}" enabled="{{ svcauto }}"
+
+- name: root password
+  mysql_user: name={{ root_db_user }} password={{ root_db_password }} login_user={{ root_db_user }} login_password={{ root_db_password }} check_implicit_admin=yes
+
+- name: mycnf create
+  template: src="{{ tmp_mycnf }}" dest="{{ login_mycnf }}" owner="{{ root_db_user }}" mode=0600
+
+- name: DB Create
+  mysql_db: name={{ dbname }} state=present
+

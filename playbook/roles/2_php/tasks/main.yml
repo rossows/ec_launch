@@ -1,0 +1,22 @@
+---
+- name: php install repo
+  yum: name="{{ phprepo }}"
+
+- name: php install phprepo
+  yum: name={{ item }} disablerepo=amzn-main enablerepo=epel state=latest
+  with_items:
+   - 'libwebp'
+
+- name: php install phplib
+  yum: name={{ item }}
+  with_items:
+   - "{{ libpkg }}"
+
+- name: php install php
+  yum: name={{item}} disablerepo=amzn-main enablerepo=remi-php71 state=latest
+  with_items:
+   - "{{ pkglist }}"
+
+- name: php setting timezone
+  replace: dest="{{ repfile }}" regexp="{{ phpbef }}" replace="{{ phpaft }}"
+
