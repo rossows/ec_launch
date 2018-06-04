@@ -1,0 +1,33 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 Only sub
+
+Resources:
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: WorkShop
+      InstanceType: t2.micro
+      ImageId: ami-922914f7
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          SubnetId: subnet-810677e9
+          GroupSet:
+            - sg-fa1ddc90
+      Tags:
+        - Key: Name
+          Value: VM2
+      UserData: !Base64 |
+        #!/bin/bash
+        echo ******* | passwd --stdin root
+        sed -i 's/^#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
+        sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        yum --enablerepo=epel install -y sshpass
+        yum install -y vsftpd
+        yum install -y httpd
+        sed -i 's/^root/# root/' /etc/vsftpd/ftpusers
+        chkconfig httpd on
+        service httpd start
+        service vsftpd restart
+        service sshd restart

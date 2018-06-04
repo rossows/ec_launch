@@ -1,0 +1,148 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: YAML Short form
+
+
+Parameters:
+  NameTagPrefix:
+    Type: String
+    Default: ws
+    Description: Prefix of Name tags.
+  KeyPair:
+    Description: KeyPair Name
+    Type: AWS::EC2::KeyPair::KeyName
+
+Mappings:
+  StackConfig:
+    VPC:
+      CIDR: 10.1.0.0/16
+    PublicSubnet:
+      CIDR: 10.1.1.0/24
+    PublicSubnettwo:
+      CIDR: 10.1.2.0/24
+    EC2:
+      InstanceType: t2.micro
+      ImageId: ami-922914f7
+
+## Make VPC
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap [ StackConfig, VPC, CIDR ]
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [ !Ref NameTagPrefix, vpc ] ]
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [ !Ref NameTagPrefix, igw ] ]
+          
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+      
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: AttachGateway
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [ !Ref NameTagPrefix, public-route-table ] ]
+          
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    DependsOn: AttachGateway
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref "AWS::Region"
+      CidrBlock: !FindInMap [ StackConfig, PublicSubnet, CIDR ]
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [ !Ref NameTagPrefix, sub1 ] ]
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+      
+  PublicSubnettwo:
+    Type: AWS::EC2::Subnet
+    DependsOn: AttachGateway
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref "AWS::Region"
+      CidrBlock: !FindInMap [ StackConfig, PublicSubnettwo, CIDR ]
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [ !Ref NameTagPrefix, sub2 ] ]
+  PublicSubnettwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnettwo
+      RouteTableId: !Ref PublicRouteTable
+
+  EC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable ssh access to the instances
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [ !Ref NameTagPrefix, sg ] ]
+
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !FindInMap [ StackConfig, EC2, InstanceType ]
+      KeyName: !Ref KeyPair
+      ImageId: !FindInMap [ StackConfig, EC2, ImageId ]
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          GroupSet:
+            - !Ref EC2SG
+          SubnetId: !Ref PublicSubnet
+      UserData: !Base64 |
+        #!/bin/bash
+        echo ******* | passwd --stdin root
+        sed -i 's/^#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
+        sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        yum --enablerepo=epel install -y ansible
+        service sshd restart
+      Tags:
+        - Key: Name
+          Value: !Join [ "", [ !Ref NameTagPrefix, 01 ] ]
